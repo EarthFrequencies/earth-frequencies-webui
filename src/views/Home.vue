@@ -9,15 +9,22 @@
     <div class="filters">
       <label>Region: </label>
       <select>
-        <option>ITU 1</option>
-        <option>ITU 2</option>
-        <option>ITU 3</option>
-        <option>Canada</option>
-        <option>USA</option>
+        <option v-for="region in regions" :key="region.id" :value="region.id">{{ region.name }}</option>
       </select>
     </div>
 
     <frequency-selector class="frequency-selector" />
+
+    <div class="filters">
+      <label class="freq-label">Frequency Range: </label>
+      <input type="number" name="lower-frequency" /> Hz
+      -
+      <input type="number" name="upper-frequency" /> Hz
+    </div>
+
+    <div v-if="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
 
     <table class="allocation-table">
       <thead>
@@ -56,13 +63,40 @@
 </template>
 
 <script lang="ts">
+import { defineComponent, ref } from 'vue';
+import axios from 'axios';
 import FrequencySelector from '@/components/FrequencySelector.vue';
-import { defineComponent } from 'vue';
+
+const baseUrl = '.';
 
 export default defineComponent({
   name: 'Home',
   components: {
     FrequencySelector
+  },
+  setup () {
+    return {
+      regions: ref([]),
+      errorMessage: ref('')
+    };
+  },
+  mounted () {
+    this.fetchCharts();
+  },
+  methods: {
+    async fetchCharts () {
+      try {
+        const response = await axios.get(`${baseUrl}/api/charts/index.json`);
+
+        const data = response.data;
+        if (data.entries) {
+          this.regions = data.entries;
+        }
+      } catch (error: unknown) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.errorMessage = (error as any).message;
+      }
+    }
   }
 });
 </script>
@@ -86,6 +120,22 @@ export default defineComponent({
     padding: 4px;
     box-sizing: border-box;
     margin-top: 20px;
+  }
+
+  .freq-label {
+    // width: 160px;
+    margin-right: 20px;
+    display: inline-block;
+    margin-top: 5px;
+  }
+
+  .error-message {
+    margin-top: 20px;
+    width: 800px;
+    text-align: left;
+    padding: 4px 10px;
+    box-sizing: border-box;
+    background: rgb(233, 182, 182);
   }
 
   .allocation-table {
