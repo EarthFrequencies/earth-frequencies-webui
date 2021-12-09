@@ -13,7 +13,9 @@
       </select>
     </div>
 
-    <frequency-selector class="frequency-selector" />
+    <frequency-selector class="frequency-selector"
+      :fStart="1000" :fEnd="2000"
+    />
 
     <div class="filters">
       <label class="freq-label">Frequency Range: </label>
@@ -65,6 +67,7 @@
 <script lang="ts">
 import { defineComponent, ref } from 'vue';
 import axios from 'axios';
+
 import FrequencySelector from '@/components/FrequencySelector.vue';
 
 const baseUrl = '.';
