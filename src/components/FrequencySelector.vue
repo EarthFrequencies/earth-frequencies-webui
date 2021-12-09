@@ -1,7 +1,5 @@
 <template>
-  <!-- TODO: replace myPlot with uniquely defined id -->
   <div class="frequency-selector" width="1000px" height="500px">
-    <div id="myPlot" />
     <div class="frequencies">
       <span>{{ fStart }}</span>
       <span>{{ fEnd }}</span>
