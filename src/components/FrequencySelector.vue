@@ -63,13 +63,17 @@ function drawOnCanvas (
    * @param {HTMLCanvasElement} canvas The canvas to draw the curve on.
    * @param {Array<Point>} points The points to draw.
    * @param {number} scale The scale to fit to. A scale of 1
-   *   means fit to width. Defaults to 0.95 (95%).
+   *   means fit to the canvas (100%). Defaults to 0.95 (95%).
    *
    * Before we can plot the points on the canvas, we must
-   *   transforma them. The transformation equation
-   *   for the coordinate is:
-   *   x' = (x - xb) * (canvas.width / xrange) + canvas.width / 2.
-   *   y' = (y - yb) * (canvas.height / yrange) + canvas.height / 2.
+   *   transform them. The transformation equations
+   *   for the coordinates are:
+   *   x' = (x - xavg) * (canvas.width / xrange) + canvas.width / 2.
+   *   y' = (y - yavg) * (canvas.height / yrange) + canvas.height / 2.
+   *
+   *   where xavg, yavg are the average in x and y, respectively
+   *   and xrange and yrange and the full range spanned in x and y,
+   *   respectively.
   */
   const context: CanvasRenderingContext2D = (
     canvas.getContext('2d') as CanvasRenderingContext2D);
@@ -128,7 +132,7 @@ function linspace (start: number, end: number, N: number): Array<number> {
   return values;
 }
 
-function fitToContainer (
+function fitCanvasToParentContainer (
   canvas: HTMLCanvasElement,
   scaleX = 1.0,
   scaleY = 1.0
@@ -179,7 +183,7 @@ export default defineComponent({
   props: ['lowerFrequency', 'upperFrequency'],
   mounted () {
     if (this.canvas !== undefined) {
-      fitToContainer(this.canvas, 0.9, 0.8);
+      fitCanvasToParentContainer(this.canvas, 0.9, 0.8);
       const points: Array<Point> = frequencyCurve(this.lowerFrequency, this.upperFrequency);
       drawOnCanvas(this.canvas, points);
     }
