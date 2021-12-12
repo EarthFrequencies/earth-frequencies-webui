@@ -14,7 +14,7 @@
     </div>
 
     <frequency-selector class="frequency-selector"
-      :fStart="1000" :fEnd="2000"
+      :lowerFrequency="1000" :upperFrequency="2000"
     />
 
     <div class="filters">
