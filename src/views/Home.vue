@@ -6,6 +6,10 @@
       <router-link to="/about">About</router-link>
     </div>
 
+    <div id="nav" class="allocation-breadcrumbs">
+      <a href="#" class="router-link-active router-link-exact-active">ITU 2</a> &gt; United States
+    </div>
+
     <div class="filters">
       <label>Region: </label>
       <select>
@@ -125,6 +129,14 @@ export default defineComponent({
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 800px;
+  margin: 0 auto;
+
+  .allocation-breadcrumbs {
+    text-align: left;
+    width: 800px;
+    padding-left: 16px;
+  }
 
   .frequency-selector {
     border: solid 1px grey;

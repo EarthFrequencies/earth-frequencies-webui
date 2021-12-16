@@ -21,7 +21,7 @@ export default defineComponent({
     }
   },
   methods: {
-    allocationClass (allocation: any) {
+    allocationClass (/* allocation: any */) {
       return 'alloc-type-a';
     }
   },
