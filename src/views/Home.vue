@@ -67,7 +67,7 @@ import { defineComponent, ref } from 'vue';
 import axios from 'axios';
 
 import FrequencySelector from '@/components/FrequencySelector.vue';
-import { FrequencyRange } from '@/models/FrequencyRange';
+import { Range } from '@/models/Range';
 
 const baseUrl = '.';
 
@@ -78,7 +78,7 @@ export default defineComponent({
   },
   setup () {
     return {
-      frequencyRange: ref<FrequencyRange>({ lower: 0, upper: 1000 }),
+      frequencyRange: ref<Range>({ lower: 0, upper: 1000 }),
       regions: ref([]),
       errorMessage: ref('')
     };

@@ -1,8 +1,8 @@
 import { Point } from '@/models/Point';
-import { FrequencyRange } from '@/models/FrequencyRange';
+import { Range } from '@/models/Range';
 import { linspace } from '@/math/Math';
 
-function frequencyCurve (frequencyRange: FrequencyRange, N = 1000): Array<Point> {
+function frequencyCurve (frequencyRange: Range, N = 1000): Array<Point> {
   const points: Array<Point> = [];
   let point: Point;
   const alpha = 10;
