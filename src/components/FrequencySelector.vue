@@ -1,15 +1,15 @@
 <template>
-  <div class="frequency-selector" width="1000px" height="500px">
+  <div class="frequency-selector">
     <div class="frequencies">
-      <span>{{ fStart }}</span>
-      <span>{{ fEnd }}</span>
+      <span>{{ lowerFrequency }}</span>
+      <span>{{ upperFrequency }}</span>
     </div>
-    <canvas id="canvas"></canvas>
+    <canvas id="canvas" ref="canvas"></canvas>
   </div>
 </template>
 
 <script lang='ts'>
-import { defineComponent } from 'vue';
+import { defineComponent, ref } from 'vue';
 
 // TODO(jrmlhermitte): replace this and all other plotting
 //   with a standard plotting library.
@@ -25,12 +25,12 @@ class Point {
     return new Point(-this.x, -this.y);
   }
 
-  translate (offset: Point): Point {
-    return new Point(this.x + offset.x, this.y + offset.y);
+  translateX (offset: number): Point {
+    return new Point(this.x + offset, this.y);
   }
 
-  scale (scale: number): Point {
-    return new Point(this.x * scale, this.y * scale);
+  translateY (offset: number): Point {
+    return new Point(this.x, this.y + offset);
   }
 
   scaleX (scale: number): Point {
@@ -54,48 +54,73 @@ function average (points: Array<Point>): Point {
 }
 
 function drawOnCanvas (
-  canvas: CanvasRenderingContext2D,
-  points: Array<Point>
+  canvas: HTMLCanvasElement,
+  points: Array<Point>,
+  scale = 0.95
 ): void {
-  // Should be automatically chosen by plotting library.
-  const XOffset: Point = new Point(-points[0].x, 0);
-  const YOffset: Point = new Point(0, 40);
-  const YScale = 30;
-  const XScale = 1;
+  /* Draw a curve on the canvas.
+   *
+   * @param {HTMLCanvasElement} canvas The canvas to draw the curve on.
+   * @param {Array<Point>} points The points to draw.
+   * @param {number} scale The scale to fit to. A scale of 1
+   *   means fit to the canvas (100%). Defaults to 0.95 (95%).
+   *
+   * Before we can plot the points on the canvas, we must
+   *   transform them. The transformation equations
+   *   for the coordinates are:
+   *   x' = (x - xavg) * (canvas.width / xrange) + canvas.width / 2.
+   *   y' = (y - yavg) * (canvas.height / yrange) + canvas.height / 2.
+   *
+   *   where xavg, yavg are the average in x and y, respectively
+   *   and xrange and yrange and the full range spanned in x and y,
+   *   respectively.
+  */
+  const context: CanvasRenderingContext2D = (
+    canvas.getContext('2d') as CanvasRenderingContext2D);
+
+  const transformedPoints: Array<Point> = rescaleToCanvas(canvas, points, scale);
+  let nextPoint: Point = transformedPoints[0];
+  context.moveTo(nextPoint.x, nextPoint.y);
+  for (nextPoint of transformedPoints.slice(1)) {
+    context.lineTo(nextPoint.x, nextPoint.y);
+    context.moveTo(nextPoint.x, nextPoint.y);
+  }
+  context.stroke();
+}
+
+function rescaleToCanvas (
+  canvas: HTMLCanvasElement,
+  points: Array<Point>,
+  scale: number
+): Array<Point> {
+  const yValues: Array<number> = points.map((point: Point): number => point.y);
+  const xValues: Array<number> = points.map((point: Point): number => point.x);
+
+  const maxY = Math.max(...yValues);
+  const minY = Math.min(...yValues);
+  const rangeY = (maxY - minY);
+
+  const maxX = Math.max(...xValues);
+  const minX = Math.min(...xValues);
+  const rangeX = (maxX - minX);
+
+  const YScale = canvas.height / rangeY * scale;
+  const XScale = canvas.width / rangeX * scale;
 
   const pointAverage: Point = average(points);
-  const pointYAverage: Point = new Point(0, pointAverage.y);
-  const pointXAverage: Point = new Point(pointAverage.x, 0);
+  type PointTransformer = (point: Point) => Point;
 
-  let point: Point = points[0];
-  // amplify curve around average
-  let nextPoint: Point = point
-    .translate(pointYAverage.invert())
-    .scaleY(YScale)
-    .translate(pointYAverage)
-    .translate(pointXAverage.invert())
-    .scaleX(XScale)
-    .translate(pointXAverage)
-    .translate(YOffset)
-    .translate(XOffset)
-    ;
-
-  canvas.moveTo(nextPoint.x, nextPoint.y);
-  for (point of points.slice(1)) {
-    nextPoint = point
-      .translate(pointYAverage.invert())
+  const transformer: PointTransformer = (point: Point) => {
+    return point
+      .translateY(-pointAverage.y)
       .scaleY(YScale)
-      .translate(pointYAverage)
-      .translate(pointXAverage.invert())
+      .translateY(canvas.height / 2.0)
+      .translateX(-pointAverage.x)
       .scaleX(XScale)
-      .translate(pointXAverage)
-      .translate(YOffset)
-      .translate(XOffset)
-    ;
-    canvas.lineTo(nextPoint.x, nextPoint.y);
-    canvas.moveTo(nextPoint.x, nextPoint.y);
-  }
-  canvas.stroke();
+      .translateX(canvas.width / 2.0);
+  };
+
+  return points.map(transformer);
 }
 
 function linspace (start: number, end: number, N: number): Array<number> {
@@ -107,19 +132,46 @@ function linspace (start: number, end: number, N: number): Array<number> {
   return values;
 }
 
-function frequencyCurve (fStart: number, fEnd: number): Array<Point> {
+function fitCanvasToParentContainer (
+  canvas: HTMLCanvasElement,
+  scaleX = 1.0,
+  scaleY = 1.0
+) {
+  /*
+  * Set a canvas width and height to match its parent tag.
+  * https://stackoverflow.com/questions/10214873/make-canvas-as-wide-and-as-high-as-parent
+  *
+  */
+  // Make it visually fill the positioned parent
+  const scaleXString = (scaleX * 100).toFixed(0).toString() + '%';
+  const scaleYString = (scaleY * 100).toFixed(0).toString() + '%';
+  canvas.style.width = scaleXString;
+  canvas.style.height = scaleYString;
+  // ...then set the internal size to match
+  canvas.width = canvas.offsetWidth;
+  canvas.height = canvas.offsetHeight;
+}
+
+function frequencyCurve (
+  lowerFrequency: number,
+  upperFrequency: number
+): Array<Point> {
   const points: Array<Point> = [];
   let point: Point;
   const alpha = 10;
   const beta = 3;
 
   const N = 1000;
-  const frequencies: Array<number> = linspace(fStart, fEnd, N);
+  const frequencies: Array<number> = linspace(
+    lowerFrequency, upperFrequency, N);
   let x: number;
   let y: number;
   for (const frequency of frequencies) {
     x = frequency;
-    y = Math.cos(alpha * Math.exp(beta * (frequency - fStart) / (fEnd - fStart)));
+    y = Math.cos(alpha * Math.exp(
+      beta *
+      (frequency - lowerFrequency) /
+      (upperFrequency - lowerFrequency)));
     point = new Point(x, y);
     points.push(point);
   }
@@ -128,20 +180,17 @@ function frequencyCurve (fStart: number, fEnd: number): Array<Point> {
 
 export default defineComponent({
   name: 'FrequencySelector',
-  props: ['fStart', 'fEnd'],
-  data () {
-    return {
-      vueCanvas: null as unknown as CanvasRenderingContext2D
-    };
-  },
+  props: ['lowerFrequency', 'upperFrequency'],
   mounted () {
-    const canvas = document.getElementById('canvas') as HTMLCanvasElement;
-    canvas.height = 400;
-    canvas.width = 700;
-    var ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    this.vueCanvas = ctx;
-    const points: Array<Point> = frequencyCurve(this.fStart, this.fEnd);
-    drawOnCanvas(this.vueCanvas, points);
+    if (this.canvas !== undefined) {
+      fitCanvasToParentContainer(this.canvas, 0.9, 0.8);
+      const points: Array<Point> = frequencyCurve(this.lowerFrequency, this.upperFrequency);
+      drawOnCanvas(this.canvas, points);
+    }
+  },
+  setup () {
+    const canvas = ref<HTMLCanvasElement>();
+    return { canvas };
   }
 });
 </script>
