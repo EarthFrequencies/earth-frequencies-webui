@@ -1,46 +1,24 @@
-class FrequencyRange {
+interface FrequencyRange {
   lowerFrequency: number
   upperFrequency: number
-  constructor (lowerFrequency: number, upperFrequency: number) {
-    this.lowerFrequency = lowerFrequency;
-    this.upperFrequency = upperFrequency;
-  }
 }
 
-class AllocationService {
+interface AllocationService {
   applications: Array<string>
   category: string
   footnotes: Array<string>
   region: string
   service: string
   subTable: string
-
-  constructor (
-    applications: Array<string>,
-    category: string,
-    footnotes: Array<string>,
-    region: string,
-    service: string,
-    subTable: string) {
-    this.applications = applications;
-    this.category = category;
-    this.footnotes = footnotes;
-    this.region = region;
-    this.service = service;
-    this.subTable = subTable;
-  }
 }
 
-class Allocation {
+interface Allocation {
   band: FrequencyRange
   service: AllocationService
-
-  constructor (band: FrequencyRange, service: AllocationService) {
-    this.band = band;
-    this.service = service;
-  }
 }
 
+// TODO (jrmlhermitte): find more shorthand way for defining this
+//  constructor.
 class AllocationsTable {
   name: string
   allocations: Array<Allocation>

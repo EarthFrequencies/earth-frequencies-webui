@@ -13,13 +13,8 @@
       </select>
     </div>
 
-<<<<<<< HEAD
     <frequency-selector class="frequency-selector"
       :lowerFrequency="1000" :upperFrequency="2000"
-=======
-    <FrequencySelector
-      :fStart="1000" :fEnd="2000"
->>>>>>> 0328ae9 (feat(frequency): read mock frequency table)
     />
 
     <div class="filters">
