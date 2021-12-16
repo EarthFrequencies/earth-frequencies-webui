@@ -13,15 +13,13 @@
       </select>
     </div>
 
-    <frequency-selector class="frequency-selector"
-      :lowerFrequency="1000" :upperFrequency="2000"
-    />
+    <frequency-selector :frequency-range="frequencyRange" />
 
     <div class="filters">
       <label class="freq-label">Frequency Range: </label>
-      <input type="number" name="lower-frequency" /> Hz
+      <input type="number" v-model="frequencyRange.lower" /> Hz
       -
-      <input type="number" name="upper-frequency" /> Hz
+      <input type="number" v-model="frequencyRange.upper" /> Hz
     </div>
 
     <div v-if="errorMessage" class="error-message">
@@ -69,6 +67,7 @@ import { defineComponent, ref } from 'vue';
 import axios from 'axios';
 
 import FrequencySelector from '@/components/FrequencySelector.vue';
+import { FrequencyRange } from '@/models/FrequencyRange';
 
 const baseUrl = '.';
 
@@ -79,6 +78,7 @@ export default defineComponent({
   },
   setup () {
     return {
+      frequencyRange: ref<FrequencyRange>({ lower: 0, upper: 1000 }),
       regions: ref([]),
       errorMessage: ref('')
     };
