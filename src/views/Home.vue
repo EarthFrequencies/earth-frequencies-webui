@@ -17,6 +17,8 @@
       :lowerFrequency="1000" :upperFrequency="2000"
     />
 
+    <allocation-chart :allocations="allocations" />
+
     <div class="filters">
       <label class="freq-label">Frequency Range: </label>
       <input type="number" name="lower-frequency" /> Hz
@@ -37,20 +39,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td>0 Hz</td>
-          <td>100 Hz</td>
-          <td>Something</td>
-        </tr>
-        <tr>
-          <td>101 Hz</td>
-          <td>200 Hz</td>
-          <td>Something Else</td>
-        </tr>
-       <tr>
-          <td>201 Hz</td>
-          <td>300 Hz</td>
-          <td>Something Else Again</td>
+        <tr v-for="(allocation, idx) in allocations" :key="idx">
+          <td class="align-left">{{ allocation.band.lower }} Hz</td>
+          <td class="align-left">{{ allocation.band.upper }} Hz</td>
+          <td class="align-left">{{ allocation.service }}</td>
         </tr>
       </tbody>
     </table>
@@ -69,18 +61,42 @@ import { defineComponent, ref } from 'vue';
 import axios from 'axios';
 
 import FrequencySelector from '@/components/FrequencySelector.vue';
+import AllocationChart from '@/components/AllocationChart.vue';
 
 const baseUrl = '.';
+
+// just until we have a proper data file, and have established
+// the json schema we want to use
+const frequencyAllocations = [{
+  band: {
+    lower: 0,
+    upper: 9000.0
+  },
+  service: 'abc'
+}, {
+  band: {
+    lower: 0,
+    upper: 9000.0
+  },
+  service: 'def'
+}, {
+  band: {
+    lower: 9000.1,
+    upper: 10000
+  },
+  service: 'ghi'
+}];
 
 export default defineComponent({
   name: 'Home',
   components: {
-    FrequencySelector
+    FrequencySelector, AllocationChart
   },
   setup () {
     return {
       regions: ref([]),
-      errorMessage: ref('')
+      errorMessage: ref(''),
+      allocations: ref(frequencyAllocations)
     };
   },
   mounted () {
@@ -155,16 +171,19 @@ export default defineComponent({
     th, td {
       // border: solid 1px grey;
       padding: 2px 4px;
+      text-align: left;
     }
     td:nth-child(1) {
       width: 150px;
+      text-align: left;
     }
     td:nth-child(2) {
       width: 150px;
-    }
-    th:nth-child(3), td:nth-child(3) {
       text-align: left;
     }
+    // th:nth-child(3), td:nth-child(3) {
+    //   text-align: left;
+    // }
   };
 
   .logo-box {
