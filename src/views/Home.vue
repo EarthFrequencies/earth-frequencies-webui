@@ -21,7 +21,7 @@
       :lowerFrequency="1000" :upperFrequency="2000"
     />
 
-    <allocation-chart :allocations="allocations" />
+    <allocation-chart :allocations="allocations" class="allocation-chart"/>
 
     <div class="filters">
       <label class="freq-label">Frequency Range: </label>
@@ -66,30 +66,58 @@ import axios from 'axios';
 
 import FrequencySelector from '@/components/FrequencySelector.vue';
 import AllocationChart from '@/components/AllocationChart.vue';
+import { FrequencyAllocations } from '@/models';
 
 const baseUrl = '.';
 
 // just until we have a proper data file, and have established
 // the json schema we want to use
-const frequencyAllocations = [{
-  band: {
-    lower: 0,
-    upper: 9000.0
-  },
-  service: 'abc'
-}, {
-  band: {
-    lower: 0,
-    upper: 9000.0
-  },
-  service: 'def'
-}, {
-  band: {
-    lower: 9000.1,
-    upper: 10000
-  },
-  service: 'ghi'
-}];
+const frequencyAllocations: FrequencyAllocations = {
+  name: 'United States',
+  region: 'us',
+  allocationBlocks: [{
+    band: {
+      lower: 0,
+      upper: 90000
+    },
+    allocations: [{
+      service: 'NOT ALLOCATED',
+      primary: true
+    }]
+  }, {
+    band: {
+      lower: 960000,
+      upper: 116400
+    },
+    allocations: [{
+      service: 'AERONAUTICAL MOBILE (R)',
+      primary: true,
+      footnotes: ['5.327A']
+    }, {
+      service: 'AERONAUTICAL RADIONAVIGATION',
+      primary: true,
+      footnotes: ['5.328']
+    }]
+  }, {
+    band: {
+      lower: 116400,
+      upper: 121500
+    },
+    allocations: [{
+      service: 'AERONAUTICAL RADIONAVIGATION',
+      primary: true,
+      footnotes: ['5.328']
+    }, {
+      service: 'RADIONAVIGATION-SATELLITE (space-to-Earth)',
+      primary: true,
+      footnotes: ['5.328B']
+    }, {
+      service: 'RADIONAVIGATION-SATELLITE (space-to-space)',
+      primary: true,
+      footnotes: ['5.328B']
+    }]
+  }]
+};
 
 export default defineComponent({
   name: 'Home',
@@ -100,7 +128,7 @@ export default defineComponent({
     return {
       regions: ref([]),
       errorMessage: ref(''),
-      allocations: ref(frequencyAllocations)
+      allocations: ref(frequencyAllocations.allocationBlocks)
     };
   },
   mounted () {
@@ -167,6 +195,11 @@ export default defineComponent({
     padding: 4px 10px;
     box-sizing: border-box;
     background: rgb(233, 182, 182);
+  }
+
+  .allocation-chart {
+    margin-top: 20px;
+    width: 800px;
   }
 
   .allocation-table {

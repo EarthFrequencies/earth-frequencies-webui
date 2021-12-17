@@ -1,94 +1,122 @@
 <template>
-  <div class="freq-chart">
-    <div class="freq-range" v-for="allocationsBand in allocationsByBand" :key="allocationsBand.key">
-      <div :class="`freq-allocation ${allocationClass(allocation)}`" v-for="(allocation, idx) in allocationsBand.allocations" :key="idx">
-        {{ allocation.service }}
+  <div class="freq-alloc-chart-holder">
+    <div class="freq-alloc-chart">
+      <div
+        v-for="allocationsBlock in allocationBlocks" :key="allocationsBlock.band.lower"
+        class="freq-alloc-block" :style="allocationBlockStyle(allocationsBlock)"
+        :title="`${humanHzUnits(allocationsBlock.band.lower)} - ${humanHzUnits(allocationsBlock.band.upper)}`"
+      >
+        <div
+          v-for="(allocation, idx) in allocationsBlock.allocations" :key="idx"
+          class="freq-allocation" :style="allocationStyle(allocation)"
+          @click="$emit('allocation-click', allocation)"
+        >
+          {{ allocation.service }}
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue';
+import { defineComponent, PropType } from 'vue';
+import { FrequencyAllocation, FrequencyAllocationBlock } from '../models';
+
+const serviceColours: Record<string, string> = {
+  'NOT ALLOCATED': 'white',
+  'AERONAUTICAL MOBILE': '#00AEE1',
+  'AERONAUTICAL MOBILE SATELLITE': '#97C9EC',
+  'AERONAUTICAL RADIONAVIGATION': '#C05018',
+  'RADIONAVIGATION-SATELLITE': '#E8EA7C'
+};
 
 export default defineComponent({
   name: 'AllocationChart',
   props: {
     allocations: {
-      type: Array,
+      type: Array as PropType<FrequencyAllocationBlock[]>,
       default: () => [],
       required: true
     }
   },
   methods: {
-    allocationClass (/* allocation: any */) {
-      return 'alloc-type-a';
+    allocationBlockStyle (allocationsBlock: FrequencyAllocationBlock) {
+      const diff = allocationsBlock.band.upper - allocationsBlock.band.lower;
+      return {
+        width: `${diff / 30}px`
+      };
+    },
+    allocationStyle (allocation: FrequencyAllocation) {
+      let service = allocation.service;
+      const idx = service.indexOf('(');
+      if (idx > -1) {
+        service = service.substring(0, idx).trim();
+      }
+
+      let colour = serviceColours[service];
+      if (!colour) {
+        colour = 'white';
+      }
+
+      return {
+        background: colour
+      };
+    },
+    humanHzUnits (value: number) {
+      let baseUnit = 'Hz';
+      let divider = 1;
+      if (value > 1e12) {
+        baseUnit = 'THz';
+        divider = 1e9;
+      } else if (value > 1e9) {
+        baseUnit = 'GHz';
+        divider = 1e9;
+      } else if (value > 1e6) {
+        baseUnit = 'MHz';
+        divider = 1e6;
+      } else if (value > 1e3) {
+        baseUnit = 'KHz';
+        divider = 1e3;
+      }
+
+      return `${value / divider} ${baseUnit}`;
     }
   },
   computed: {
-    allocationsByBand () {
-      const allocationsByBand: Record<string, any> = {};
-
-      this.allocations.forEach((allocation: any) => {
-        const key = `${allocation.band.lower}-${allocation.band.lower}`;
-        if (!allocationsByBand[key]) {
-          allocationsByBand[key] = {
-            key: key,
-            band: allocation.band,
-            allocations: []
-          };
-        }
-        allocationsByBand[key].allocations.push(allocation);
-      });
-
-      return Object.values(allocationsByBand).sort(
-        (entryA: any, entryB: any) => entryA.band.lower - entryB.band.lower
-      );
+    allocationBlocks () {
+      return this.allocations;
     }
   }
 });
 </script>
 
 <style lang='scss' scoped>
-.freq-chart {
-  border: solid 1px black;
+.freq-alloc-chart-holder {
+  overflow-x: auto;
+  display: block;
+}
+
+.freq-alloc-chart {
   height: 200px;
   display: flex;
+  border: solid 1px rgb(153, 153, 153);
 
-  .freq-range {
-    /* border: solid 1px blue; */
+  .freq-alloc-block {
     display: flex;
     flex-direction: column;
     width: 200px;
+    font-size: 80%;
 
     .freq-allocation {
-      border: solid 1px blue;
+      border: solid 1px rgb(77, 77, 78);
       display: flex;
       flex-direction: column;
       flex-grow: 1;
       justify-content: center;
       align-items: center;
+      overflow: hidden;
     }
   }
 }
 
-.alloc-type-a {
-  background: #efe;
-}
-
-.alloc-type-b {
-  background: #fee;
-}
-
-.alloc-type-c {
-  background: #eef;
-}
-
-.alloc-type-d {
-  background: #eff;
-}
-
-.alloc-type-d {
-  background: #ffe;
-}
 </style>
