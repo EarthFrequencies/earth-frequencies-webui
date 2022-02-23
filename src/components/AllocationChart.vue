@@ -2,16 +2,21 @@
   <div class="freq-alloc-chart-holder">
     <div class="freq-alloc-chart">
       <div
-        v-for="allocationsBlock in allocationBlocks" :key="allocationsBlock.band.lower"
-        class="freq-alloc-block" :style="allocationBlockStyle(allocationsBlock)"
-        :title="`${humanHzUnits(allocationsBlock.band.lower)} - ${humanHzUnits(allocationsBlock.band.upper)}`"
+        v-for="allocationBand in allocations" :key="allocationBand.lf"
+        class="freq-alloc-block" :style="allocationBandStyle(allocationBand)"
+        :title="`${humanHzUnits(allocationBand.lf)} - ${humanHzUnits(allocationBand.uf)}`"
       >
-        <div
-          v-for="(allocation, idx) in allocationsBlock.allocations" :key="idx"
-          class="freq-allocation" :style="allocationStyle(allocation)"
-          @click="$emit('allocation-click', allocation)"
-        >
-          {{ allocation.service }}
+        <template v-if="allocationBand.services && allocationBand.services.length > 0">
+          <div
+            v-for="(service, idx) in allocationBand.services" :key="idx"
+            class="freq-allocation" :style="serviceStyle(service, allocationBand)"
+            @click="$emit('allocation-click', service)"
+          >
+            <span class="desc">{{ service.desc }}</span>
+          </div>
+        </template>
+        <div v-else class="freq-allocation">
+          <span class="desc">Not allocated</span>
         </div>
       </div>
     </div>
@@ -19,68 +24,79 @@
 </template>
 
 <script lang="ts">
+import { humanHzUnits, getColourForService } from '@/utils/FrequencyUtils';
 import { defineComponent, PropType } from 'vue';
-import { FrequencyAllocation, FrequencyAllocationBlock } from '../models';
-
-const serviceColours: Record<string, string> = {
-  'NOT ALLOCATED': 'white',
-  'AERONAUTICAL MOBILE': '#00AEE1',
-  'AERONAUTICAL MOBILE SATELLITE': '#97C9EC',
-  'AERONAUTICAL RADIONAVIGATION': '#C05018',
-  'RADIONAVIGATION-SATELLITE': '#E8EA7C'
-};
+import { FrequencyService, FrequencyAllocationBand } from '../models';
 
 export default defineComponent({
   name: 'AllocationChart',
   props: {
     allocations: {
-      type: Array as PropType<FrequencyAllocationBlock[]>,
+      type: Array as PropType<FrequencyAllocationBand[]>,
       default: () => [],
       required: true
+    },
+    serviceFilter: {
+      type: Array as PropType<string[] | undefined>,
+      required: false
+    },
+    bandFilter: {
+      type: Object as PropType<Record<string, string>>,
+      required: false
+    }
+  },
+  watch: {
+    allocations () {
+      console.log('xx - allocations', this.allocations[0]);
     }
   },
   methods: {
-    allocationBlockStyle (allocationsBlock: FrequencyAllocationBlock) {
-      const diff = allocationsBlock.band.upper - allocationsBlock.band.lower;
+    allocationBandStyle (allocationBand: FrequencyAllocationBand) {
+      // TODO this is still wrong. We also need to work out the right CSS
+      const logUpperFrequency = Math.log2(allocationBand.uf);
+      const logLowerFrequency = Math.log2(allocationBand.lf);
+      const diff = logUpperFrequency - logLowerFrequency;
       return {
-        width: `${diff / 30}px`
+        width: `${diff * 900}px`
       };
     },
-    allocationStyle (allocation: FrequencyAllocation) {
-      let service = allocation.service;
-      const idx = service.indexOf('(');
-      if (idx > -1) {
-        service = service.substring(0, idx).trim();
-      }
-
-      let colour = serviceColours[service];
+    serviceStyle (service: FrequencyService, allocationBand: FrequencyAllocationBand) {
+      let colour = getColourForService(service.desc);
       if (!colour) {
         colour = 'white';
       }
 
-      return {
+      const style: Record<string, string> = {
         background: colour
       };
-    },
-    humanHzUnits (value: number) {
-      let baseUnit = 'Hz';
-      let divider = 1;
-      if (value > 1e12) {
-        baseUnit = 'THz';
-        divider = 1e9;
-      } else if (value > 1e9) {
-        baseUnit = 'GHz';
-        divider = 1e9;
-      } else if (value > 1e6) {
-        baseUnit = 'MHz';
-        divider = 1e6;
-      } else if (value > 1e3) {
-        baseUnit = 'KHz';
-        divider = 1e3;
+
+      const disabledStyle = 'repeating-linear-gradient(45deg, #f5f5f5 0px, #f5f5f5 10px, #fff 10px, #fff 20px)';
+
+      if (Array.isArray(this.serviceFilter) && this.serviceFilter.length > 0) {
+        const serviceName = service.desc.toLowerCase();
+        const match = this.serviceFilter.find(service => serviceName.startsWith(service));
+        if (!match) {
+          style.background = disabledStyle;
+        }
       }
 
-      return `${value / divider} ${baseUnit}`;
-    }
+      if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.lowerFrequency))) {
+        const lowerFrequency = parseFloat(this.bandFilter.lowerFrequency as string);
+        if (allocationBand.uf < lowerFrequency) {
+          style.background = disabledStyle;;
+        }
+      }
+
+      if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.upperFrequency))) {
+        const upperFrequency = parseFloat(this.bandFilter.upperFrequency as string);
+        if (allocationBand.uf > upperFrequency) {
+          style.background = disabledStyle;
+        }
+      }
+
+      return style;
+    },
+    humanHzUnits: humanHzUnits
   },
   computed: {
     allocationBlocks () {
@@ -119,4 +135,7 @@ export default defineComponent({
   }
 }
 
+.desc {
+  transform: rotateZ(270deg);
+}
 </style>

@@ -1,17 +1,20 @@
-interface FrequencyBand {
-  lower: number;
-  upper: number;
-}
+// interface FrequencyBand {
+//   lf: number;
+//   uf: number;
+// }
 
-interface FrequencyAllocation {
-  service: string;
+interface FrequencyService {
+  desc: string;
   primary: boolean;
+  category: string;
   footnotes?: string[];
 }
 
-interface FrequencyAllocationBlock {
-  band: FrequencyBand;
-  allocations: FrequencyAllocation[];
+interface FrequencyAllocationBand {
+  lf: number,
+  uf: number
+  services: FrequencyService[];
+  footnotes?: string[];
 }
 
 interface FrequencyAllocations {
@@ -19,13 +22,12 @@ interface FrequencyAllocations {
   region: string;
   parentRegion?: string;
   year?: number;
-  meta?: Record<string, any>;
-  allocationBlocks: FrequencyAllocationBlock[];
+  meta?: Record<string, unknown>;
+  allocationBands: FrequencyAllocationBand[];
 }
 
 export {
-  FrequencyBand,
-  FrequencyAllocation,
-  FrequencyAllocationBlock,
+  FrequencyService,
+  FrequencyAllocationBand,
   FrequencyAllocations
 };
