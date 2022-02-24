@@ -4,12 +4,14 @@
       <span>{{ lowerFrequency }}</span>
       <span>{{ upperFrequency }}</span>
     </div>
-    <canvas id="canvas" ref="canvas"></canvas>
+    <!-- <canvas id="canvas" ref="canvas"></canvas> -->
+    <div :id="drawingZoneId" ref="drawingZone" class="drawing-zone"></div>
   </div>
 </template>
 
 <script lang='ts'>
 import { defineComponent, ref } from 'vue';
+import Raphael from 'raphael2';
 
 // TODO(jrmlhermitte): replace this and all other plotting
 //   with a standard plotting library.
@@ -182,26 +184,65 @@ export default defineComponent({
   name: 'FrequencySelector',
   props: ['lowerFrequency', 'upperFrequency'],
   mounted () {
-    if (this.canvas !== undefined) {
-      fitCanvasToParentContainer(this.canvas, 0.9, 0.8);
-      const points: Array<Point> = frequencyCurve(this.lowerFrequency, this.upperFrequency);
-      drawOnCanvas(this.canvas, points);
+    const drawingZone = this.$refs.drawingZone as any;
+    const paper = Raphael(drawingZone, 1024, 100);
+
+    const centerY = 57;
+    const scaleY = 42;
+    const scaleX = 220;
+
+    let maxY = centerY;
+    let minY = centerY;
+
+    let x = 10;
+    let x2 = Math.log(x) * scaleX;
+    const offset = x2;
+    let path = `M${x2 - offset} ${centerY + (Math.cos(x / 4) * scaleY)}`;
+    for (; x < 1000; x++) {
+      const y = centerY + (Math.cos(x / 4) * scaleY);
+      if (y > maxY) {
+        maxY = y;
+      }
+      if (y < minY) {
+        minY = y;
+      }
+      x2 = Math.log(x) * scaleX;
+      path += `L${x2 - offset} ${y}`;
     }
+    console.log(path);
+    paper.path(path);
+
+    path = `M0 ${maxY}L1024 ${maxY}`;
+    paper.path(path).attr('stroke', '#f00');
+
+    path = `M0 ${minY}L1024 ${minY}`;
+    paper.path(path).attr('stroke', '#00f');
   },
   setup () {
     const canvas = ref<HTMLCanvasElement>();
-    return { canvas };
+    return {
+      canvas,
+      drawingZoneId: `drawingzone-${Date.now()}`
+    };
   }
 });
 </script>
 
 <style lang='scss' scoped>
 .frequency-selector {
+  position: relative;
   padding: 4px;
   box-sizing: border-box;
+  overflow: hidden;
   .frequencies {
     display: flex;
     justify-content: space-between;
+  }
+
+  .drawing-zone {
+    position: absolute;
+    top: 0;
+    height: 100%;
   }
 }
 </style>
