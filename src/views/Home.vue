@@ -28,10 +28,15 @@
     </div> -->
 
     <frequency-selector class="frequency-selector"
-      :lowerFrequency="1000" :upperFrequency="2000"
+      :lowerFrequency="Math.pow(10, 0)" :upperFrequency="Math.pow(10, 11) * 3"
     />
 
     <allocation-chart :allocations="allocationBands" :service-filter="servicesToDisplay" :band-filter="filterRange" class="allocation-chart"/>
+
+    <div v-if="metadata" class="allocation-table-info">
+      <div v-if="metadata.official">Official source: <a :href="metadata.official">{{ metadata.official }}</a></div>
+      <div v-if="metadata.edition">Edition: {{ metadata.edition }}</div>
+    </div>
 
     <div class="filters">
       <div class="filter-row">
@@ -64,19 +69,18 @@
           <td class="align-left">
             <ul>
               <li v-for="(service, idx2) in allocationBand.services" :key="idx2">
-                <div class="bullet" :style="{ background: getColourForService(service.desc) }"></div><div>{{ service.desc }}</div>
+                <div class="bullet" :style="{ background: getColourForService(service.desc) }"></div>
+                <div>
+                  <span class="service-desc">{{ service.desc }}</span>
+                  <span v-if="service.footnotes" class="service-footnotes"> ({{ service.footnotes.join(', ') }})</span>
+                </div>
               </li>
             </ul>
+            <div v-if="allocationBand.footnotes" class="band-footnotes">{{ allocationBand.footnotes.join(', ') }}</div>
           </td>
         </tr>
       </tbody>
     </table>
-
-    <div v-if="metadata" class="allocation-table-info">
-      <div v-if="metadata.name_en">Region: {{ metadata.name_en }}</div>
-      <div v-if="metadata.official">Official source: <a :href="metadata.official">{{ metadata.official }}</a></div>
-      <div v-if="metadata.edition">Edition: {{ metadata.edition }}</div>
-    </div>
 
     <div class="allocation-table-info">
       Disclaimer: This project is developped by volunteers and there is no guarantee as to the
@@ -424,5 +428,18 @@ export default defineComponent({
   padding: 4px 10px;
   box-sizing: border-box;
   background: #ffc107;
+}
+
+.service-footnotes {
+  font-size: 80%;
+}
+
+.band-footnotes {
+  text-align: right;
+  font-size: 80%;
+  margin: 0 4px 4px 0;
+  &::before {
+    content: 'footnotes: '
+  }
 }
 </style>

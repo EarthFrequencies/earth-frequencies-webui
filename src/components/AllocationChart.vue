@@ -11,7 +11,6 @@
       <div
         v-for="allocationBand in filteredAllocationBands" :key="allocationBand.lf"
         class="freq-alloc-band" :style="allocationBandStyle(allocationBand)"
-        :title="`${humanHzUnits(allocationBand.lf)} - ${humanHzUnits(allocationBand.uf)}`"
       >
         <template v-if="allocationBand.services && allocationBand.services.length > 0">
           <div
@@ -20,6 +19,7 @@
             @click="$emit('allocation-click', service)"
           >
             <span class="desc">{{ service.desc }}</span>
+            <div class="band">{{ humanHzUnits(allocationBand.lf) }} - {{ humanHzUnits(allocationBand.uf) }}</div>
           </div>
         </template>
         <div v-else class="freq-allocation">
@@ -130,7 +130,7 @@ export default defineComponent({
     filteredAllocationBands () {
       let allocations = [...this.allocations];
 
-      const adjustedAllocations = [];
+      const adjustedAllocations = [] as Record<string, any>[];
 
       if (allocations.length > 0) {
         allocations = allocations.filter((band, idx) => {
@@ -156,6 +156,12 @@ export default defineComponent({
           if (allocations[i].services && allocations[i].services.length > 0) {
             adjustedAllocations.push(allocations[i]);
           }
+        }
+        if (allocations[allocations.length - 1].uf !== (Math.pow(10, 11) * 3)) {
+          adjustedAllocations.push({
+            lf: allocations[allocations.length - 1].uf,
+            uf: (Math.pow(10, 11) * 3)
+          });
         }
       }
       allocations = adjustedAllocations as any;
@@ -185,8 +191,6 @@ export default defineComponent({
 // .freq-alloc-chart {
 .allocation-bands {
   height: 200px;
-  // display: flex;
-  border: solid 1px rgb(153, 153, 153);
   white-space: nowrap;
 
   .freq-alloc-band {
@@ -210,6 +214,14 @@ export default defineComponent({
       justify-content: center;
       align-items: center;
       overflow: hidden;
+    }
+
+    .band {
+      display: none;
+    }
+
+    &:hover .band {
+      display: block;
     }
   }
 }
