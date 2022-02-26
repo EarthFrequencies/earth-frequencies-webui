@@ -1,6 +1,6 @@
 <template>
   <div class="home">
-    <img alt="Earth Frequencies" src="/banner.svg">
+    <img alt="Earth Frequencies" src="images/banner.svg">
     <div id="nav">
       <router-link to="/">Home</router-link> |
       <router-link to="/about">About</router-link>
@@ -12,13 +12,16 @@
       {{ errorMessage }}
     </div>
 
+    <div v-if="!allocationsValid" class="allocation-validation-issues">
+      <b>Warning:</b> {{ warningMessage }}
+    </div>
+
     <div class="filters">
       <label>Region: </label>
       <select @change="onRegionChange" v-model="activeRegion">
         <option v-for="region in regions" :key="region.path" :value="region.path">{{ region.region }}</option>
       </select>
     </div>
-
 
     <!-- <div id="nav" class="allocation-breadcrumbs">
       <a href="#" class="router-link-active router-link-exact-active">ITU 2</a> &gt; United States
@@ -87,7 +90,7 @@
 
     <div class="logo-box">
       <a href="https://github.com/EarthFrequencies">
-        <img src="/github.svg" alt="GitHub" class="github-logo"/>
+        <img src="images/github.svg" alt="GitHub" class="github-logo"/>
         <div>Hosted on GitHub</div>
       </a>
     </div>
@@ -165,6 +168,7 @@ export default defineComponent({
       activeRegion: ref('itu1'),
       regions: ref([] as Record<string, string>[]),
       errorMessage: ref(''),
+      warningMessage: ref(''),
       allocationBands: ref([] as FrequencyAllocationBand[]),
       metadata: ref(undefined as Record<string, string> | undefined),
       services,
@@ -172,7 +176,8 @@ export default defineComponent({
       filterRange: ref({
         lowerFrequency: '' as number | string,
         upperFrequency: '' as number | string
-      })
+      }),
+      allocationsValid: ref(true)
     };
   },
   async mounted () {
@@ -199,6 +204,9 @@ export default defineComponent({
     },
     async fetchAllocations () {
       try {
+        this.allocationBands = [];
+        this.metadata = {};
+
         const response = await axios.get(`${baseUrl}/allocations/tables/${this.activeRegion}`);
         const data = response.data;
         if (Array.isArray(data.entries) && data.entries.length > 0) {
@@ -209,10 +217,26 @@ export default defineComponent({
           this.allocationBands = data.entries[0].bands;
         }
         this.metadata = data.metadata;
+        this.validateAllocations();
       } catch (error: unknown) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         this.errorMessage = (error as any).message;
       }
+    },
+    validateAllocations () {
+      let valid = true;
+      this.warningMessage = '';
+      for (let i = 1; i < this.allocationBands.length; i++) {
+        if (this.allocationBands[i].lf < this.allocationBands[i - 1].uf) {
+          this.warningMessage = 'band allocations data may have issues, due to band overlap';
+          valid = false;
+        }
+        if (this.allocationBands[i].lf !== this.allocationBands[i - 1].uf) {
+          this.warningMessage = `band allocations data may have issues, due to missing bands - ${humanHzUnits(this.allocationBands[i].lf)}`;
+          valid = false;
+        }
+      }
+      this.allocationsValid = valid;
     },
     async onRegionChange () {
       await this.fetchAllocations();
@@ -390,5 +414,15 @@ export default defineComponent({
     margin-top: 30px;
     text-align: left;
   }
+}
+
+.allocation-validation-issues {
+  margin-top: 20px;
+  width: 1024px;
+  max-width: 100%;
+  text-align: left;
+  padding: 4px 10px;
+  box-sizing: border-box;
+  background: #ffc107;
 }
 </style>

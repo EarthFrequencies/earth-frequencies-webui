@@ -5,9 +5,9 @@ const serviceColours: Record<string, string> = {
   'aeronautical mobile satellite': '#97C9EC',
   'aeronautical radionavigation': '#C05018',
   amateur: '#419272',
-  'amateur satellite': '#D8E8DF',
+  'amateur-satellite': '#D8E8DF',
   broadcasting: '#5095B6',
-  'broadcasting satellite': '#78B956',
+  'broadcasting-satellite': '#78B956',
   'earth exploration-satellite': '#E9984D',
   'inter-satellite': '#FAE486',
   'land mobile': '#FAE486',
@@ -30,7 +30,7 @@ const serviceColours: Record<string, string> = {
   'space operation': '#97473C',
   'space research': '#DB9196',
   'standard frequency and time signal': '#90979B',
-  'standard frequency and time signal satellite': '#B3B4B8'
+  'standard frequency and time signal-satellite': '#B3B4B8'
 };
 
 function getServices (): string[] {
@@ -38,7 +38,7 @@ function getServices (): string[] {
 }
 
 function getColourForService (serviceName: string): string {
-  let idx = serviceName.indexOf('except');
+  let idx = serviceName.toLowerCase().indexOf('except');
   if (idx > -1) {
     serviceName = serviceName.substring(0, idx);
   }
