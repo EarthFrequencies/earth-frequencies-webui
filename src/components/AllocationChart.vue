@@ -1,9 +1,16 @@
 <template>
   <div class="freq-alloc-chart-holder">
     <div class="freq-alloc-chart">
+      <div class="log10-bands" >
+        <div v-for="(band, idx) in log10bands" :key="idx" class="log10-band" :style="allocationBandStyle(band as any)">
+          <span class="lf">{{ humanHzUnits(band.lf) }}</span><span class="uf">{{ humanHzUnits(band.uf) }}</span>
+        </div>
+      </div>
+
+      <div class="allocation-bands">
       <div
-        v-for="allocationBand in allocations" :key="allocationBand.lf"
-        class="freq-alloc-block" :style="allocationBandStyle(allocationBand)"
+        v-for="allocationBand in filteredAllocationBands" :key="allocationBand.lf"
+        class="freq-alloc-band" :style="allocationBandStyle(allocationBand)"
         :title="`${humanHzUnits(allocationBand.lf)} - ${humanHzUnits(allocationBand.uf)}`"
       >
         <template v-if="allocationBand.services && allocationBand.services.length > 0">
@@ -18,6 +25,7 @@
         <div v-else class="freq-allocation">
           <span class="desc">Not allocated</span>
         </div>
+      </div>
       </div>
     </div>
   </div>
@@ -45,16 +53,33 @@ export default defineComponent({
       required: false
     }
   },
-  watch: {
-    allocations () {
-      console.log('xx - allocations', this.allocations[0]);
+  setup () {
+    const log10bands: Record<string, any>[] = [];
+    log10bands.push({
+      lf: 3000,
+      uf: 10000
+    });
+    for (let i = 4; i < 11; i++) {
+      log10bands.push({
+        lf: Math.pow(10, i),
+        uf: Math.pow(10, i + 1)
+      });
     }
+    log10bands.push({
+      lf: Math.pow(10, 11),
+      uf: Math.pow(10, 11) * 3
+    });
+
+    return {
+      log10bands
+    };
   },
   methods: {
     allocationBandStyle (allocationBand: FrequencyAllocationBand) {
       // TODO this is still wrong. We also need to work out the right CSS
-      const logUpperFrequency = Math.log2(allocationBand.uf);
-      const logLowerFrequency = Math.log2(allocationBand.lf);
+      const logUpperFrequency = Math.log10(allocationBand.uf);
+      const logLowerFrequency = Math.log10(allocationBand.lf || 3000);
+
       const diff = logUpperFrequency - logLowerFrequency;
       return {
         width: `${diff * 900}px`
@@ -83,13 +108,13 @@ export default defineComponent({
       if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.lowerFrequency))) {
         const lowerFrequency = parseFloat(this.bandFilter.lowerFrequency as string);
         if (allocationBand.uf < lowerFrequency) {
-          style.background = disabledStyle;;
+          style.background = disabledStyle;
         }
       }
 
       if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.upperFrequency))) {
         const upperFrequency = parseFloat(this.bandFilter.upperFrequency as string);
-        if (allocationBand.uf > upperFrequency) {
+        if (allocationBand.lf > upperFrequency) {
           style.background = disabledStyle;
         }
       }
@@ -99,8 +124,53 @@ export default defineComponent({
     humanHzUnits: humanHzUnits
   },
   computed: {
-    allocationBlocks () {
-      return this.allocations;
+    // allocationBlocks () {
+    //   return this.allocations;
+    // },
+    filteredAllocationBands () {
+      let allocations = [...this.allocations];
+
+      const adjustedAllocations = [];
+
+      if (allocations.length > 0) {
+        allocations = allocations.filter((band, idx) => {
+          return idx === 0 || (band.services && band.services.length > 0);
+        });
+
+        if (allocations[0].lf !== 0) {
+          adjustedAllocations.push({
+            lf: 0,
+            uf: allocations[0].lf
+          });
+        }
+
+        adjustedAllocations.push(allocations[0]);
+        for (let i = 1; i < allocations.length; i++) {
+          if (allocations[i - 1].uf !== allocations[i].lf) {
+            adjustedAllocations.push({
+              lf: allocations[i - 1].uf,
+              uf: allocations[i].lf,
+              services: [{ desc: 'unspecified' }]
+            });
+          }
+          if (allocations[i].services && allocations[i].services.length > 0) {
+            adjustedAllocations.push(allocations[i]);
+          }
+        }
+      }
+      allocations = adjustedAllocations as any;
+
+      if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.lowerFrequency))) {
+        const lowerFrequency = parseFloat(this.bandFilter.lowerFrequency as string);
+        allocations = allocations.filter(allocationBand => allocationBand.uf >= lowerFrequency);
+      }
+
+      if (this.bandFilter && !isNaN(parseFloat(this.bandFilter.upperFrequency))) {
+        const upperFrequency = parseFloat(this.bandFilter.upperFrequency as string);
+        allocations = allocations.filter(allocationBand => allocationBand.lf <= upperFrequency);
+      }
+
+      return allocations;
     }
   }
 });
@@ -112,16 +182,23 @@ export default defineComponent({
   display: block;
 }
 
-.freq-alloc-chart {
+// .freq-alloc-chart {
+.allocation-bands {
   height: 200px;
-  display: flex;
-  border: solid 1px rgb(153, 153, 153);
+  white-space: nowrap;
 
-  .freq-alloc-block {
-    display: flex;
+  .freq-alloc-band {
+    display: inline-flex;
+    vertical-align: top;
     flex-direction: column;
     width: 200px;
     font-size: 80%;
+    height: 100%;
+
+    &:hover {
+      width: 300px;
+      min-width: 300px;
+    }
 
     .freq-allocation {
       border: solid 1px rgb(77, 77, 78);
@@ -136,6 +213,20 @@ export default defineComponent({
 }
 
 .desc {
-  transform: rotateZ(270deg);
+  // transform: rotateZ(270deg);
+}
+
+.log10-bands {
+  white-space: nowrap;
+  .log10-band {
+    display: inline-flex;
+    border: solid 1px black;
+    justify-content: space-between;
+    padding: 0 4px;
+    box-sizing: border-box;
+    background: black;
+    color: white;
+    border-right: solid 1px white;
+  }
 }
 </style>
