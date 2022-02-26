@@ -185,8 +185,6 @@ export default defineComponent({
 // .freq-alloc-chart {
 .allocation-bands {
   height: 200px;
-  // display: flex;
-  border: solid 1px rgb(153, 153, 153);
   white-space: nowrap;
 
   .freq-alloc-band {
