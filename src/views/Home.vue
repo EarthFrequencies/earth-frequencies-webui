@@ -350,8 +350,7 @@ export default defineComponent({
 
   .allocation-table {
     margin-top: 20px;
-    width: 1024px;
-    max-width: 100%;
+    width: 100%;
     border: solid 1px grey;
     tr:nth-child(even) td {
       background: rgb(226, 242, 253);
