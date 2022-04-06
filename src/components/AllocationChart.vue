@@ -193,6 +193,9 @@ export default defineComponent({
   height: 200px;
   white-space: nowrap;
 
+  border-left: solid 1px rgb(77, 77, 78);
+  border-right: solid 1px rgb(77, 77, 78);
+
   .freq-alloc-band {
     display: inline-flex;
     vertical-align: top;
@@ -207,7 +210,8 @@ export default defineComponent({
     }
 
     .freq-allocation {
-      border: solid 1px rgb(77, 77, 78);
+      border-right: solid 1px rgb(77, 77, 78);
+      border-bottom: solid 1px rgb(77, 77, 78);
       display: flex;
       flex-direction: column;
       flex-grow: 1;
@@ -241,6 +245,14 @@ export default defineComponent({
     background: black;
     color: white;
     border-right: solid 1px white;
+
+    span:last-child {
+      display: none;
+    }
+
+    &:last-child span:last-child {
+      display: block;
+    }
   }
 }
 </style>
